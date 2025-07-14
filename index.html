@@ -8,10 +8,10 @@
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
     <!-- 
         Chosen Palette: "Hacker Green" - A high-contrast dark theme using a near-black background (#0D1117) and a vibrant green (#39D353) for text and accents, inspired by classic computer terminals. This creates a focused, stylish, and highly readable interface.
-        Application Structure Plan: The SPA's single-view data entry structure is retained. The information architecture remains focused on the central data grid for efficiency. The dark theme enhances focus on the data by reducing background glare. The layout is optimized for quick scanning and data entry tasks.
+        Application Structure Plan: The SPA's single-view data entry structure is retained. The information architecture is focused on the central data grid for efficiency. A new prominent display bar has been added for real-time scanner feedback. The dark theme enhances focus on the data by reducing background glare.
         Visualization & Content Choices: 
         - Report Info: Inventory Data -> Goal: Quick data entry -> Viz/Presentation: Interactive HTML Table (Dark Theme) -> Interaction: Editable cells, new rows on scan -> Justification: The table remains the most efficient UI for this task; the dark theme improves data focus. -> Library/Method: HTML/CSS/JS.
-        - Report Info: Barcode Printing -> Goal: Visual confirmation -> Viz/Presentation: Barcode on Canvas (light background for contrast) -> Interaction: Button click -> Justification: The barcode is generated on a light background within the modal to ensure scannability, contrasting with the app's dark theme for functional clarity. -> Library/Method: JsBarcode/Canvas.
+        - Report Info: Barcode Printing -> Goal: Visual confirmation -> Viz/Presentation: Barcode on Canvas (light background for contrast) -> Interaction: Button click -> Justification: The barcode is generated on a canvas is a lightweight, high-quality method that avoids external image dependencies and simulates the output of a thermal printer. -> Library/Method: JsBarcode/Canvas.
         CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
     -->
     <style>
@@ -56,6 +56,9 @@
             color: #4b5563;
             cursor: not-allowed;
         }
+        .scanner-display {
+            transition: background-color 0.3s;
+        }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
 </head>
@@ -70,6 +73,13 @@
 
         <!-- Main Content -->
         <main class="flex-1 overflow-y-auto p-6">
+            <!-- Scanner Display Bar -->
+            <div class="mb-6">
+                <div id="scanner-display" class="scanner-display bg-black/30 border border-green-500/25 rounded-lg p-4 text-2xl font-semibold text-center text-green-400 h-16 flex items-center justify-center">
+                    <span id="scanner-text">WAITING FOR SCAN...</span>
+                </div>
+            </div>
+
             <div class="table-container bg-black/30 rounded-lg">
                 <table class="w-full">
                     <thead class="border-b-2 border-green-500/40">
@@ -150,6 +160,7 @@
         const barcodeCanvas = document.getElementById('barcode-canvas');
         const totalItemsEl = document.getElementById('total-items');
         const grandTotalEl = document.getElementById('grand-total');
+        const scannerDisplayText = document.getElementById('scanner-text');
 
         const calculateTotals = () => {
             const totalItems = state.inventory.reduce((sum, item) => sum + item.amount, 0);
@@ -246,6 +257,7 @@
             if (e.key === 'Enter') {
                 if (barcodeBuffer.length > 3) {
                     statusBar.innerHTML = `<span class="status-bar-active">Scanned: ${barcodeBuffer}</span>`;
+                    scannerDisplayText.textContent = `LAST SCAN: ${barcodeBuffer}`;
                     addNewItem(barcodeBuffer);
                 }
                 barcodeBuffer = '';
@@ -256,13 +268,17 @@
                 barcodeBuffer += e.key;
             }
 
-            statusBar.innerHTML = `<span class="status-bar-active">Scanning... ${barcodeBuffer}</span>`;
+            statusBar.innerHTML = `<span class="status-bar-active">Scanning...</span>`;
+            scannerDisplayText.textContent = barcodeBuffer;
 
             clearTimeout(barcodeTimeout);
             barcodeTimeout = setTimeout(() => {
-                barcodeBuffer = '';
-                statusBar.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 animate-ping"></span> Ready to scan...`;
-            }, 500);
+                if (barcodeBuffer.length > 0) {
+                    barcodeBuffer = '';
+                    statusBar.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 animate-ping"></span> Ready to scan...`;
+                    scannerDisplayText.textContent = 'WAITING FOR SCAN...';
+                }
+            }, 1000);
         };
 
         const handleSave = () => {
@@ -302,3 +318,4 @@
     </script>
 </body>
 </html>
+
